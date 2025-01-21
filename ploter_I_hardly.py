@@ -5,13 +5,14 @@ from pathlib import Path
 from typing import Tuple
 
 class TimeSeriesSmoother:
-    def __init__(self, results_path: str = "plot2/analysis_results.csv"):
+    def __init__(self, results_path: str = "plot2"):
         """
         Initialize the smoother with the path to analysis results.
         
         Args:
             results_path: Path to the CSV file containing analysis results
         """
+        results_path = results_path + "/analysis_results.csv"
         self.df = pd.read_csv(results_path)
         self.df['date'] = pd.to_datetime(self.df['date'])
         
@@ -62,7 +63,7 @@ class TimeSeriesSmoother:
         chatgpt_release = pd.to_datetime('2022-11-30')
         
         metrics = [
-            ('mean_score', 'Average Binoculars Score'),
+            ('mean_score', 'Average Telescope Score'),
             ('ai_percentage', 'AI-Generated Abstract Percentage')
         ]
         
@@ -127,8 +128,9 @@ class TimeSeriesSmoother:
             plt.close()
 
 def main():
-    smoother = TimeSeriesSmoother()
-    smoother.plot_simple_kalman()
+    path = "plot_gemma"
+    smoother = TimeSeriesSmoother(path)
+    smoother.plot_simple_kalman(path)
     print("Simple Kalman smoothed plots have been generated in the output directory.")
 
 if __name__ == "__main__":

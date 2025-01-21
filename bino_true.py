@@ -35,6 +35,26 @@ def assert_tokenizer_consistency(model_id_1, model_id_2):
         raise ValueError(f"Tokenizers are not identical for {model_id_1} and {model_id_2}.")
 
 
+def perplexity_telescope(encoding: transformers.BatchEncoding,
+               logits: torch.Tensor,
+               median: bool = False,
+               temperature: float = 1.0):
+    shifted_logits = logits[..., :-1, :].contiguous() / temperature
+    shifted_labels = encoding.input_ids[..., :-1].contiguous()
+    shifted_attention_mask = encoding.attention_mask[..., 1:].contiguous()
+
+    if median:
+        ce_nan = (ce_loss_fn(shifted_logits.transpose(1, 2), shifted_labels).
+                  masked_fill(~shifted_attention_mask.bool(), float("nan")))
+        ppl = np.nanmedian(ce_nan.cpu().float().numpy(), 1)
+
+    else:
+        ppl = (ce_loss_fn(shifted_logits.transpose(1, 2), shifted_labels) *
+               shifted_attention_mask).sum(1) / shifted_attention_mask.sum(1)
+        ppl = ppl.to("cpu").float().numpy()
+
+    return ppl
+
 def perplexity(encoding: transformers.BatchEncoding,
                logits: torch.Tensor,
                median: bool = False,
@@ -54,7 +74,6 @@ def perplexity(encoding: transformers.BatchEncoding,
         ppl = ppl.to("cpu").float().numpy()
 
     return ppl
-
 
 def entropy(p_logits: torch.Tensor,
             q_logits: torch.Tensor,
@@ -151,6 +170,7 @@ class Binoculars(object):
         encodings = self._tokenize(batch)
         observer_logits, performer_logits = self._get_logits(encodings)
         ppl = perplexity(encodings, performer_logits)
+        ppl2 = perplexity(encodings, performer_logits)
         x_ppl = entropy(observer_logits.to(DEVICE_1), performer_logits.to(DEVICE_1),
                         encodings.to(DEVICE_1), self.tokenizer.pad_token_id)
         binoculars_scores = ppl / x_ppl

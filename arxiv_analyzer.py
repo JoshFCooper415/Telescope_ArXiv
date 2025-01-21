@@ -2,7 +2,7 @@ import json
 import pathlib
 from typing import Dict, List, Tuple
 import numpy as np
-from bino_true import Binoculars
+from binoculars_detector import Binoculars
 import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm import tqdm
